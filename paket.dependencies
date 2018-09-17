@@ -1,0 +1,14 @@
+source https://www.nuget.org/api/v2
+
+framework: netstandard2.0
+nuget FSharp.Core
+nuget MongoDB.Bson
+
+group Build
+source https://www.nuget.org/api/v2
+
+nuget FAKE
+nuget Fake.Core
+nuget Fake.DotNet.Cli
+nuget Fake.IO.FileSystem
+nuget Fake.Core.Target
