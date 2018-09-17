@@ -4,6 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Enrique Alfonso Casanovas Pedre</Authors>
     <Description>This library contains some serializers to make the use of BSON more friendly in F#</Description>
+    <PackageProjectUrl>https://github.com/eacasanovaspedre/Bson.FSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/eacasanovaspedre/Bson.FSharp</RepositoryUrl>
+    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
