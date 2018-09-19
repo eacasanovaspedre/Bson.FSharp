@@ -88,7 +88,9 @@ type FsharpSerializationProvider() =
 
 module Registration =
     
-    let register = lazy (
+    let private _register = lazy (
             BsonSerializer.RegisterSerializationProvider(FsharpSerializationProvider())
             BsonSerializer.RegisterGenericSerializerDefinition(typeof<list<_>>, typeof<ListSerializer<_>>))
+
+    let register () = _register.Force ()
         
