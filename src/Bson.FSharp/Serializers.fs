@@ -32,6 +32,12 @@ type ListSerializer<'T>() =
             |> InvalidOperationException
             |> raise
 
+    interface IBsonArraySerializer with
+        member __.TryGetItemSerializationInfo serializationInfo =
+            let nominalType = typeof<'T>
+            serializationInfo <- BsonSerializationInfo (null, BsonSerializer.LookupSerializer<'T> (), nominalType)
+            true
+
 type UnionCaseSerializer<'T>() =
     inherit SerializerBase<'T>()
 
