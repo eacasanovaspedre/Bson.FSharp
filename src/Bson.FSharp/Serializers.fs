@@ -41,7 +41,7 @@ type ListSerializer<'T>() =
 type UnionCaseSerializer<'T>() =
     inherit SerializerBase<'T>()
 
-    override __.Serialize(context, args, value) =
+    override __.Serialize(context, _, value) =
         let writer = context.Writer
         writer.WriteStartDocument ()
         let info, values = FSharpValue.GetUnionFields (value, typeof<'T>)
@@ -55,9 +55,9 @@ type UnionCaseSerializer<'T>() =
         writer.WriteEndArray ()
         writer.WriteEndDocument()
 
-    override __.Deserialize(context, args) =
+    override __.Deserialize(context, _) =
         let reader = context.Reader
-
+        
         reader.ReadStartDocument()
         let n = reader.ReadName (IO.Utf8NameDecoder.Instance)
         if n = "_t" then
@@ -70,7 +70,7 @@ type UnionCaseSerializer<'T>() =
                 (unionType.GetFields () |> Seq.map (fun f -> f.PropertyType))
                 |> Seq.map (fun t ->
                     let serializer = BsonSerializer.LookupSerializer t
-                    serializer.Deserialize (context)
+                    serializer.Deserialize context
                 ) |> Seq.toArray
             reader.ReadEndArray()
             reader.ReadEndDocument()
@@ -78,13 +78,34 @@ type UnionCaseSerializer<'T>() =
         else
             failwith "No type information"
 
+type OptionSerializer<'T>() =
+    inherit SerializerBase<'T option>()
+
+    override __.Serialize(context, _, value) =
+        let writer = context.Writer
+        match value with
+        | Some v -> BsonSerializer.Serialize (writer, typeof<'T>, v)
+        | None -> writer.WriteNull()
+
+    override __.Deserialize(context, _) =
+        let reader = context.Reader
+        
+        if reader.CurrentBsonType = BsonType.Null then
+            None
+        else
+            let serializer = BsonSerializer.LookupSerializer typeof<'T>
+            Some (serializer.Deserialize context :?> 'T)
+
 type FsharpSerializationProvider() =
     interface IBsonSerializationProvider with
         member __.GetSerializer(typ : Type) =
             if FSharpType.IsUnion typ then
-                if typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<List<_>> then
-                     typedefof<ListSerializer<_>>.MakeGenericType(typ.GetGenericArguments())
-                     |> Activator.CreateInstance :?> IBsonSerializer
+                if typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Option<_>> then
+                    typedefof<OptionSerializer<_>>.MakeGenericType(typ.GetGenericArguments())
+                    |> Activator.CreateInstance :?> IBsonSerializer
+                elif typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<List<_>> then
+                    typedefof<ListSerializer<_>>.MakeGenericType(typ.GetGenericArguments())
+                    |> Activator.CreateInstance :?> IBsonSerializer
                 else
                     printfn "typ = %A" typ
                     typedefof<UnionCaseSerializer<_>>.MakeGenericType([|typ|])
