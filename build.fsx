@@ -30,7 +30,20 @@ let dotnetExePath = "dotnet"
 // Helpers
 // --------------------------------------------------------------------------------------
 
-let run' timeout cmd args dir =
+let path = System.IO.Path.GetDirectoryName
+
+let versionRegex = System.Text.RegularExpressions.Regex(@"(\d+)\.(\d+).(\d+)(-\w+\d*)?")
+
+let readVersion () = 
+    let rawVersion = System.IO.File.ReadLines versionFile |> Seq.head
+    let result = versionRegex.Match rawVersion
+    if result.Success then
+        int result.Groups.[1].Value, int result.Groups.[2].Value, int result.Groups.[3].Value, result.Groups.[4].Value
+    else
+        failwith "Incorrect version format"
+
+let strVersion (major, minor, patch, extra) = sprintf "%d.%d.%d%s" major minor patch extra
+let run' timeout args dir cmd =
     if Process.execSimple (fun info ->
         { info with 
             FileName = cmd
@@ -105,7 +118,7 @@ Target.create "Publish" (fun param ->
         match param.Context.Arguments with
         | [key] -> key
         | _ -> failwith "Invalid arguments. Usage: Publish ApiKey"
-    let package = !! (projectPath + "/bin/Release/*.nupkg") |> Seq.head
+    let package = !! ((path project) + "/bin/Release/*.nupkg") |> Seq.head
     runDotnet "." (sprintf "nuget push %s -k %s -s https://api.nuget.org/v3/index.json" package key)
 )
 
