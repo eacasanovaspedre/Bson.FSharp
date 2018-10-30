@@ -22,7 +22,7 @@ open Fake.DotNet
 
 //let buildDir  = ".src//build/"
 
-let projectPath = !! "./src/Bson.FSharp" |> Seq.head
+let project = !! "./src/Bson.FSharp" |> Seq.head
 let dotnetcliVersion = "2.0.2"
 let dotnetExePath = "dotnet"
 
@@ -57,7 +57,7 @@ let runDotnet workingDir args =
 // --------------------------------------------------------------------------------------
 
 Target.create "Clean" (fun _ ->
-    let k = [ !! (projectPath + "/bin"); !! (projectPath + "/obj") ] |> Seq.map Seq.head |> Seq.toArray
+    let k = [ !! (project + "/bin"); !! (project + "/obj") ] |> Seq.map Seq.head |> Seq.toArray
     printfn "Cleaning build dirs..."
     k |> Seq.iter (fun dir -> 
         printf "Cleaning dir %s" dir
@@ -73,7 +73,7 @@ Target.create "InstallDotNetCLI" (fun _ ->
 )
 
 Target.create "Restore" (fun _ ->
-    runDotnet projectPath "restore"
+    runDotnet project "restore"
 )
 
 Target.create "Build" (fun param ->
@@ -86,7 +86,7 @@ Target.create "Build" (fun param ->
     | ["Release"; _] -> " -c Release"
     | _ -> failwith "Invalid arguments. Usage: Publish [Debug|Release] [ApiKey]"
     |> sprintf "build%s"
-    |> runDotnet projectPath
+    |> runDotnet project
 )
 
 Target.create "Pack" (fun param ->
@@ -99,7 +99,7 @@ Target.create "Pack" (fun param ->
     | ["Release"; _] -> " -c Release"
     | _ -> failwith "Invalid arguments. Usage: Publish [Debug|Release] [ApiKey]"
     |> sprintf "pack%s"
-    |> runDotnet projectPath
+    |> runDotnet project
 )
 
 Target.create "Publish" (fun param ->
