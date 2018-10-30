@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Bson.FSharp</PackageId>
-    <Version>1.0.5-alpha</Version>
+    <Version>1.0.6-alpha</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Enrique Alfonso Casanovas Pedre</Authors>
     <Description>This library contains some serializers to make the use of BSON more friendly in F#</Description>
