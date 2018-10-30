@@ -22,7 +22,7 @@ open Fake.DotNet
 
 //let buildDir  = ".src//build/"
 
-let project = !! "./src/Bson.FSharp" |> Seq.head
+let project = !! "./src/**/*.fsproj" |> Seq.head
 let dotnetcliVersion = "2.0.2"
 let dotnetExePath = "dotnet"
 
