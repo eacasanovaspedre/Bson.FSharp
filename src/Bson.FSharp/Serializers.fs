@@ -139,8 +139,8 @@ module Registration =
             BsonSerializer.RegisterSerializationProvider(FSharpSerializationProvider())
             BsonSerializer.RegisterGenericSerializerDefinition(typeof<list<_>>, typeof<ListSerializer<_>>))
 
-    let registerSerializers (additionalSerializers: IBsonSerializer list) = 
-        additionalSerializers
+    let registerSerializers (customSerializers: IBsonSerializer list) = 
+        customSerializers
         |> List.iter (fun s -> BsonSerializer.RegisterSerializer(s.ValueType, s))
         _registerDefault.Force ()
         
