@@ -57,7 +57,7 @@ let runDotnet workingDir args =
 // --------------------------------------------------------------------------------------
 
 Target.create "Clean" (fun _ ->
-    let k = [ !! (project + "/bin"); !! (project + "/obj") ] |> Seq.map Seq.head |> Seq.toArray
+    let k = [ !! (path project + "/bin"); !! (path project + "/obj") ] |> Seq.map Seq.head |> Seq.toArray
     printfn "Cleaning build dirs..."
     k |> Seq.iter (fun dir -> 
         printf "Cleaning dir %s" dir
@@ -72,10 +72,6 @@ Target.create "InstallDotNetCLI" (fun _ ->
     |> ignore
 )
 
-Target.create "Restore" (fun _ ->
-    runDotnet project "restore"
-)
-
 Target.create "Build" (fun param ->
     match param.Context.Arguments with
     | ["Debug"]
@@ -86,7 +82,7 @@ Target.create "Build" (fun param ->
     | ["Release"; _] -> " -c Release"
     | _ -> failwith "Invalid arguments. Usage: Publish [Debug|Release] [ApiKey]"
     |> sprintf "build%s"
-    |> runDotnet project
+    |> runDotnet (path project)
 )
 
 Target.create "Pack" (fun param ->
@@ -99,7 +95,7 @@ Target.create "Pack" (fun param ->
     | ["Release"; _] -> " -c Release"
     | _ -> failwith "Invalid arguments. Usage: Publish [Debug|Release] [ApiKey]"
     |> sprintf "pack%s"
-    |> runDotnet project
+    |> runDotnet (path project)
 )
 
 Target.create "Publish" (fun param ->
@@ -117,9 +113,6 @@ Target.create "Publish" (fun param ->
 
 "Clean"
     ==> "InstallDotNetCLI"
-    ==> "Restore"
-
-"InstallDotNetCLI"
     ==> "Build"
 
 "InstallDotNetCLI"
