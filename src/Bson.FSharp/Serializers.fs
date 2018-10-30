@@ -5,6 +5,7 @@ open Microsoft.FSharp.Reflection
 open System
 open MongoDB.Bson.Serialization.Serializers
 open MongoDB.Bson
+open MongoDB.Bson.Serialization.Serializers
 
 type ListSerializer<'T>() =
     inherit SerializerBase<'T list>()
@@ -89,14 +90,15 @@ type OptionSerializer<'T>() =
 
     override __.Deserialize(context, _) =
         let reader = context.Reader
-        
         if reader.CurrentBsonType = BsonType.Null then
+            reader.ReadNull()
             None
         else
             let serializer = BsonSerializer.LookupSerializer typeof<'T>
-            Some (serializer.Deserialize context :?> 'T)
+            let r = (serializer.Deserialize context :?> 'T)
+            Some r
 
-type FsharpSerializationProvider() =
+type FSharpSerializationProvider() =
     interface IBsonSerializationProvider with
         member __.GetSerializer(typ : Type) =
             if FSharpType.IsUnion typ then
@@ -107,7 +109,6 @@ type FsharpSerializationProvider() =
                     typedefof<ListSerializer<_>>.MakeGenericType(typ.GetGenericArguments())
                     |> Activator.CreateInstance :?> IBsonSerializer
                 else
-                    printfn "typ = %A" typ
                     typedefof<UnionCaseSerializer<_>>.MakeGenericType([|typ|])
                     |> Activator.CreateInstance :?> IBsonSerializer
             else
@@ -115,9 +116,32 @@ type FsharpSerializationProvider() =
 
 module Registration =
     
-    let private _register = lazy (
-            BsonSerializer.RegisterSerializationProvider(FsharpSerializationProvider())
+    module private Mapping =
+
+        let inline private isId str = "_id".Equals(str, StringComparison.OrdinalIgnoreCase) || 
+                                       "id".Equals(str, StringComparison.OrdinalIgnoreCase)
+
+        let inline private memberName (property: System.Reflection.PropertyInfo) = property.Name
+
+        let registerClassMapForRecord<'T> additionalConfig =
+            let ctor = FSharpValue.PreComputeRecordConstructorInfo(typeof<'T>)
+            let fields = FSharpType.GetRecordFields (typeof<'T>)
+            let fieldNames = fields |> Array.map (fun f -> f.Name)
+            BsonClassMap.RegisterClassMap<'T>(System.Action<_> (fun cm ->
+                cm.MapConstructor(ctor, fieldNames) |> ignore
+                let (ids, properties) = fields |> Array.partition (memberName >> isId)
+                ids |> Array.head |> cm.MapIdMember |> ignore
+                properties |> Array.iter (cm.MapMember >> ignore)
+                additionalConfig cm
+            )) |> ignore
+
+    let private _registerDefault = lazy (
+            BsonSerializer.RegisterSerializationProvider(FSharpSerializationProvider())
             BsonSerializer.RegisterGenericSerializerDefinition(typeof<list<_>>, typeof<ListSerializer<_>>))
 
-    let register () = _register.Force ()
+    let registerSerializers (additionalSerializers: IBsonSerializer list) = 
+        additionalSerializers
+        |> List.iter (fun s -> BsonSerializer.RegisterSerializer(s.ValueType, s))
+        _registerDefault.Force ()
         
+    let registerRecord<'T> additionalConfig = Mapping.registerClassMapForRecord additionalConfig
